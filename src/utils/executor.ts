@@ -1,7 +1,9 @@
 import * as child_process from "child_process";
 import * as fs from "fs";
+import { spawn } from "child_process";
 import * as vscode from "vscode";
 import { outputChannel } from "../data/constants";
+
 
 /**
  * Options for executeProcess function.
@@ -119,4 +121,42 @@ export function executeProcess(processOptions: ProcessOptions): Thenable<void> {
             });
         },
     );
+}
+
+export async function executeProcessOutput(
+    processOptions: ProcessOptions,
+): Promise<string> {
+    outputChannel.show();
+    outputChannel.appendLine("-".repeat(processOptions.report.length));
+    outputChannel.appendLine(processOptions.report);
+    outputChannel.appendLine("-".repeat(processOptions.report.length));
+    outputChannel.appendLine(
+        `${processOptions.command} ${processOptions.args.join(" ")}`,
+    );
+    const { command, args } = processOptions;
+    return new Promise((resolve, reject) => {
+        const proc = spawn(command, args);
+        let stdout = "";
+        let stderr = "";
+
+        proc.stdout.on("data", (data) => {
+            stdout += data.toString();
+        });
+
+        proc.stderr.on("data", (data) => {
+            stderr += data.toString();
+        });
+
+        proc.on("close", (code) => {
+            if (code === 0) {
+                resolve(stdout); // 👈 trả về stdout
+            } else {
+                reject(new Error(stderr || `Exit code ${code}`));
+            }
+        });
+
+        proc.on("error", (err) => {
+            reject(err);
+        });
+    });
 }

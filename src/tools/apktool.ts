@@ -4,6 +4,7 @@ import * as vscode from "vscode";
 import { extensionConfigName, outputChannel } from "../data/constants";
 import { executeProcess } from "../utils/executor";
 import { apkSigner } from "./uber-apk-signer";
+import { isSplitApk } from "../utils/base_apk_utils";
 
 export namespace apktool {
     /**
@@ -98,7 +99,35 @@ export namespace apktool {
                 canBeSigned = true;
             },
         });
-        if (canBeSigned) await apkSigner.signAPK(outputApkFilePath);
+        if (canBeSigned) {
+            const resourceFolder = await findResourcesDir(projectDir);
+            const apksOutputDir = [outputApkFilePath];
+            if (resourceFolder) {
+                outputChannel.appendLine(
+                    `ApkTool: Found resources dir at ${resourceFolder}`,
+                );
+                const files = await fs.promises.readdir(resourceFolder);
+                for (const file of files) {
+                   if (isSplitApk(file)) {
+                        const sliptApkDesc = path.join(
+                            projectDir,
+                            "dist",
+                            file,
+                        );
+                        outputChannel.appendLine(
+                            `ApkTool: Found split APK ${sliptApkDesc}`,
+                        );
+                        await fs.promises.copyFile(
+                            path.join(resourceFolder, file),
+                            sliptApkDesc,
+                        );
+                        apksOutputDir.push(sliptApkDesc);
+                    }
+                }
+            }
+
+            await apkSigner.signAPK(apksOutputDir);
+        }
     }
 
     /**
@@ -121,5 +150,20 @@ export namespace apktool {
             command: "java",
             args: args,
         });
+    }
+
+    export async function findResourcesDir(
+        projectDir: string,
+    ): Promise<string | null> {
+        const files = await fs.promises.readdir(projectDir);
+        for (const file of files) {
+            const fullPath = path.join(projectDir, file);
+            const stat = await fs.promises.stat(fullPath);
+
+            if (stat.isDirectory() && file.toLowerCase() === "resources") {
+                return fullPath;
+            }
+        }
+        return null;
     }
 }

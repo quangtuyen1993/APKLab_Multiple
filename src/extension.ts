@@ -16,7 +16,27 @@ export function activate(context: vscode.ExtensionContext): void {
     if (!fs.existsSync(String(apklabDataDir))) {
         fs.mkdirSync(apklabDataDir);
     }
-
+    const showPackageListCommand = vscode.commands.registerCommand(
+        "apklab.showPackageList",
+        async () => {
+            checkAndInstallTools()
+                .then(() => {
+                    const dir = vscode.workspace.workspaceFolders;
+                    if (!dir || dir.length === 0) {
+                        outputChannel.appendLine(
+                            "No workspace folder is open. Please open a folder to save the APK.",
+                        );
+                        return;
+                    }
+                    UI.pull_apk_emulator(dir[0].uri.fsPath);
+                })
+                .catch(() => {
+                    outputChannel.appendLine(
+                        "Can't download/update dependencies!",
+                    );
+                });
+        },
+    );
     // command for opening an apk file for decoding
     const openApkFileCommand = vscode.commands.registerCommand(
         "apklab.openApkFile",
@@ -111,6 +131,7 @@ export function activate(context: vscode.ExtensionContext): void {
     );
 
     context.subscriptions.push(
+        showPackageListCommand,
         openApkFileCommand,
         rebuildAPkFileCommand,
         installAPkFileCommand,

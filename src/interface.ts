@@ -1,12 +1,22 @@
 import * as path from "path";
 import * as fs from "fs";
 import { commands, QuickPickItem, Uri, window, workspace } from "vscode";
+import * as vscode from "vscode";
 import { extensionConfigName, outputChannel } from "./data/constants";
 import { quickPickUtil } from "./utils/quick-picks";
 import { Quark } from "./tools/quark-engine";
 import { apktool } from "./tools/apktool";
-import { git } from "./tools/git";
+import { adb } from "./tools/adb";
 import { jadx } from "./tools/jadx";
+import { git } from "./tools/git";
+import { moveApksToTarget } from "./utils/base_apk_utils";
+
+interface DivideArgsResult {
+    args: string[];
+    decompileJava: boolean;
+    quarkAnalysis: boolean;
+    jadxArgs: string[];
+}
 
 export namespace UI {
     /**
@@ -28,6 +38,25 @@ export namespace UI {
         });
     }
 
+    export async function pull_apk_emulator(folderName: string): Promise<void> {
+        const listPackage = await adb.package_list();
+        const result = await window.showQuickPick(listPackage, {
+            placeHolder: "Select a package to pull",
+            canPickMany: false,
+            matchOnDetail: true,
+        });
+        if (!result) {
+            outputChannel.appendLine("APKLAB: no package was chosen");
+            return;
+        }
+        await adb.pullAPK(result, folderName);
+        const files = (await fs.promises.readdir(folderName)).filter(
+            (file) => file.endsWith(".apk"),
+        );
+        const apkDesc = files.length == 1 ? path.join(folderName, files[0]) : folderName;
+        await _extraSource([Uri.file(apkDesc)]);
+    }
+
     /**
      * Show a APK file chooser window and decompile that APK.
      */
@@ -40,6 +69,14 @@ export namespace UI {
             },
             openLabel: "Select an APK file",
         });
+        if (result && result.length > 0) {
+            await _extraSource(result);
+        }
+    }
+
+    export async function _extraSource(
+        result: Uri[] | undefined,
+    ): Promise<DivideArgsResult | undefined> {
         if (result && result.length === 1) {
             const quickPickItems = await showArgsQuickPick(
                 quickPickUtil.getQuickPickItems("decodeQuickPickItems"),
@@ -84,12 +121,22 @@ export namespace UI {
                     }
                 }
 
+                const stat = await vscode.workspace.fs.stat(result[0]);
+                const selected_file = result[0].fsPath;
+                const isDirectory = stat.type === vscode.FileType.Directory;
+                const apkFilePath = isDirectory
+                    ? path.join(selected_file, "base.apk")
+                    : selected_file;
+
                 // project directory name
-                const apkFilePath = result[0].fsPath;
+                // const apkFilePath = result[0].fsPath;
                 let projectDir = path.join(
                     path.dirname(apkFilePath),
-                    path.parse(apkFilePath).name,
+                    isDirectory
+                        ? path.parse(selected_file).name
+                        : path.parse(apkFilePath).name,
                 );
+
                 // don't delete the existing dir if it already exists
                 while (fs.existsSync(projectDir)) {
                     projectDir = projectDir + "1";
@@ -105,6 +152,11 @@ export namespace UI {
                 // quark analysis
                 if (quarkAnalysis) {
                     await Quark.analyzeAPK(apkFilePath, projectDir);
+                }
+
+                if (isDirectory) {
+                    const targetResource = path.join(projectDir, "resources");
+                    await moveApksToTarget(selected_file, targetResource);
                 }
 
                 // Initialize project dir as git repo

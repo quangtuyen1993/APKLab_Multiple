@@ -155,9 +155,9 @@ async function getUpdateConfig(): Promise<Config> {
     }
     try {
         const buffer = await downloadFile(updaterConfigURL);
-        const config = JSON.parse(Buffer.from(buffer).toString("utf-8"));
+        const config = JSON.parse(buffer.toString("utf-8"));
         if (config && config.tools) {
-            fs.writeFileSync(configFile, buffer);
+            fs.writeFileSync(configFile, config);
             return config;
         }
     } catch (err) {

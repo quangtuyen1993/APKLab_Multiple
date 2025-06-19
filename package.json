@@ -52,6 +52,10 @@
                 "title": "APKLab: Open an APK"
             },
             {
+                "command": "apklab.showPackageList",
+                "title": "APKLab: Pull Package List"
+            },
+            {
                 "command": "apklab.rebuildApkFile",
                 "title": "APKLab: Rebuild the APK"
             },
