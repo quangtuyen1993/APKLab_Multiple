@@ -1,8 +1,8 @@
 {
-    "name": "apklab",
-    "displayName": "APKLab",
+    "name": "apklabplus",
+    "displayName": "APKLabPlus",
     "description": "Android Reverse-Engineering Workbench",
-    "publisher": "Surendrajat",
+    "publisher": "quangtuyen1993@gmail.com",
     "version": "1.7.1",
     "license": "SEE LICENSE IN LICENSE",
     "icon": "assets/icon.png",
