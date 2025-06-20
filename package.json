@@ -3,19 +3,19 @@
     "displayName": "APKLabPlus",
     "description": "Android Reverse-Engineering Workbench",
     "publisher": "quangtuyen1993@gmail.com",
-    "version": "1.7.1",
+    "version": "1.0.0",
     "license": "SEE LICENSE IN LICENSE",
     "icon": "assets/icon.png",
     "engines": {
         "vscode": "^1.75.0"
     },
-    "homepage": "https://apklab.surendrajat.xyz",
+    "homepage": "https://github.com/quangtuyen1993/APKLab_Multiple.git",
     "repository": {
         "type": "git",
-        "url": "https://github.com/APKLab/APKLab.git"
+        "url": "https://github.com/quangtuyen1993/APKLab_Multiple.git"
     },
     "bugs": {
-        "url": "https://github.com/APKLab/APKLab/issues"
+        "url": "https://github.com/quangtuyen1993/APKLab_Multiple.git/issues"
     },
     "extensionDependencies": [
         "LoyieKing.smalise"
